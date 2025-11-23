@@ -1,5 +1,14 @@
 "use client"
 
+type SearchPageClientProps = {
+  searchParams: {
+    lat?: string
+    lng?: string
+    q?: string
+    vibe?: string
+  }
+}
+
 import { Navigation } from "@/components/Navigation"
 import { PlaceCard } from "@/components/PlaceCard"
 import { FilterPanel, FilterState } from "@/components/FilterPanel"
@@ -11,7 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { SlidersHorizontal, Map, List, Activity, Search, MapPin, Loader2, Sparkles, AlertCircle, CreditCard } from "lucide-react"
 import { useState, useMemo, useEffect, useRef } from "react"
-import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
 // Vibe options for user selection
@@ -26,8 +34,7 @@ const vibeOptions = [
   { value: "traditional", label: "🏛️ Traditional", emoji: "🏛️" }
 ]
 
-function SearchPageContent() {
-  const searchParams = useSearchParams()
+function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   const previousUrlRef = useRef<string>("")
   const hasInitialized = useRef(false)
   
@@ -63,15 +70,15 @@ function SearchPageContent() {
     if (hasInitialized.current) return
     hasInitialized.current = true
 
-    const urlLat = searchParams.get("lat")
-    const urlLng = searchParams.get("lng")
+    const urlLat = urlParams.lat
+    const urlLng = urlParams.lng
 
     // If URL has coordinates, use them
     if (urlLat && urlLng) {
       const lat = parseFloat(urlLat)
       const lng = parseFloat(urlLng)
-      const urlQuery = searchParams.get("q") || "restaurants cafes near me"
-      const urlVibe = searchParams.get("vibe") || ""
+      const urlQuery = urlParams.q || "restaurants cafes near me"
+      const urlVibe = urlParams.vibe || ""
 
       setSearchQuery(urlQuery)
       setSelectedVibe(urlVibe)
