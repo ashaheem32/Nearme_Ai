@@ -178,27 +178,27 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   useEffect(() => {
     if (!hasInitialized.current) return
 
-    const urlQuery = searchParams.get("q") || "restaurants cafes near me"
-    const urlLat = searchParams.get("lat")
-    const urlLng = searchParams.get("lng")
-    const urlVibe = searchParams.get("vibe") || ""
-    
+    const urlQuery = urlParams.q || "restaurants cafes near me"
+    const urlLat = urlParams.lat
+    const urlLng = urlParams.lng
+    const urlVibe = urlParams.vibe || ""
+
     // Create current URL string
     const currentUrl = `${urlQuery}|${urlLat}|${urlLng}|${urlVibe}`
-    
+
     // Only proceed if URL has changed
     if (previousUrlRef.current === currentUrl) {
       return
     }
-    
+
     previousUrlRef.current = currentUrl
-    
+
     if (!urlLat || !urlLng) return
 
     // Parse coordinates from URL
     const lat = parseFloat(urlLat)
     const lng = parseFloat(urlLng)
-    
+
     // Update state with URL parameters
     setSearchQuery(urlQuery)
     setSelectedVibe(urlVibe)
@@ -207,10 +207,10 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
       lng,
       name: `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
     })
-    
+
     // Perform search with URL coordinates
     performAISearch(urlQuery, lat, lng, urlVibe)
-    
+
     // Reverse geocode for readable location name
     fetch("/api/reverse-geocode", {
       method: "POST",
@@ -227,7 +227,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
         }
       })
       .catch(err => console.error("Reverse geocode error:", err))
-  }, [searchParams])
+  }, [urlParams.q, urlParams.lat, urlParams.lng, urlParams.vibe])
 
   // Real-time updates - refresh data every 30 seconds
   useEffect(() => {
