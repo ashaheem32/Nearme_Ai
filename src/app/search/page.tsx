@@ -1,7 +1,8 @@
 import { Suspense } from "react"
-import SearchPageClient from "./SearchPageClient"
 import { Loader2 } from "lucide-react"
+import SearchPageClient from "./SearchPageClient"
 
+// Force dynamic rendering to prevent static generation
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
 export const revalidate = 0
