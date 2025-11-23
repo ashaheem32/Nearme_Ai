@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import VisualEditsMessenger from "../visual-edits/VisualEditsMessenger";
-import ErrorReporter from "@/components/ErrorReporter";
+import ErrorReporterClient from "@/components/ErrorReporterClient";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <ErrorReporter />
+        <ErrorReporterClient />
         <Script
           src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/scripts//route-messenger.js"
           strategy="afterInteractive"
