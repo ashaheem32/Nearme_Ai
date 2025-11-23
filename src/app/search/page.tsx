@@ -1,7 +1,5 @@
 "use client"
 
-export const dynamic = 'force-dynamic'
-
 import { Navigation } from "@/components/Navigation"
 import { PlaceCard } from "@/components/PlaceCard"
 import { FilterPanel, FilterState } from "@/components/FilterPanel"
@@ -12,7 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { SlidersHorizontal, Map, List, Activity, Search, MapPin, Loader2, Sparkles, AlertCircle, CreditCard } from "lucide-react"
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
@@ -28,7 +26,7 @@ const vibeOptions = [
   { value: "traditional", label: "🏛️ Traditional", emoji: "🏛️" }
 ]
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams()
   const previousUrlRef = useRef<string>("")
   const hasInitialized = useRef(false)
@@ -720,5 +718,20 @@ export default function SearchPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading search...</p>
+        </div>
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   )
 }
