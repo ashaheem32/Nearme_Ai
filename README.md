@@ -483,7 +483,7 @@ We welcome contributions! Here's how you can help:
 
 This project is proprietary. All rights reserved.
 
-For licensing inquiries, please contact: [your-email@example.com]
+For licensing inquiries, please contact: [ashaheem32@gmail.com]
 
 ---
 
@@ -491,7 +491,7 @@ For licensing inquiries, please contact: [your-email@example.com]
 
 - **Documentation:** [Full Documentation](./PROJECT_DOCUMENTATION.md)
 - **Issues:** [GitHub Issues](../../issues)
-- **Email:** [your-email@example.com]
+- **Email:** [ashaheem32@gmail.com]
 
 ---
 
