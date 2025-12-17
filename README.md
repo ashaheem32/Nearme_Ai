@@ -142,7 +142,7 @@ Before you begin, ensure you have:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ashaheem32/nearme-app.git
+   git clone https://github.com/ashaheem32/Nearme_Ai.git
    cd nearme-app
    ```
 
