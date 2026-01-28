@@ -2,6 +2,7 @@
 
 import { Navigation } from "@/components/Navigation"
 import { PlaceCard } from "@/components/PlaceCard"
+import { LocationPicker } from "@/components/LocationPicker"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -24,74 +25,7 @@ const vibeOptions = [
 ]
 
 // Indian places with real-time status
-const featuredPlaces = [
-  {
-    id: "1",
-    name: "Café Madras",
-    category: "South Indian Cafe",
-    rating: 4.8,
-    reviewCount: 1234,
-    distance: "0.8 km",
-    image: "https://images.unsplash.com/photo-1630409774334-e2d1c85bf6e7?w=800&h=600&fit=crop",
-    price: "₹₹",
-    isOpen: true
-  },
-  {
-    id: "2",
-    name: "Punjabi Tadka",
-    category: "North Indian Restaurant",
-    rating: 4.6,
-    reviewCount: 2567,
-    distance: "1.5 km",
-    image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&h=600&fit=crop",
-    price: "₹₹₹",
-    isOpen: true
-  },
-  {
-    id: "3",
-    name: "Ayurveda Wellness Spa",
-    category: "Spa & Ayurveda",
-    rating: 4.9,
-    reviewCount: 892,
-    distance: "1.2 km",
-    image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=600&fit=crop",
-    price: "₹₹₹₹",
-    isOpen: true
-  },
-  {
-    id: "4",
-    name: "Gold's Gym Mumbai",
-    category: "Gym & Fitness",
-    rating: 4.5,
-    reviewCount: 1432,
-    distance: "2.0 km",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop",
-    price: "₹₹",
-    isOpen: true
-  },
-  {
-    id: "5",
-    name: "The Bombay Canteen",
-    category: "Modern Indian Bistro",
-    rating: 4.7,
-    reviewCount: 3321,
-    distance: "1.8 km",
-    image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&h=600&fit=crop",
-    price: "₹₹₹",
-    isOpen: false
-  },
-  {
-    id: "6",
-    name: "Maharaja Palace Hotel",
-    category: "Heritage Hotel",
-    rating: 4.8,
-    reviewCount: 1445,
-    distance: "2.5 km",
-    image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&h=600&fit=crop",
-    price: "₹₹₹₹",
-    isOpen: true
-  }
-]
+import { featuredPlaces } from "@/data/places"
 
 const categories = [
   { name: "Restaurants", icon: "🍽️", count: 2340 },
@@ -137,18 +71,18 @@ export default function Home() {
           }
           return place
         })
-        
+
         // Check if any changes occurred
-        const hasChanges = updated.some((place, idx) => 
-          place.rating !== prevPlaces[idx].rating || 
+        const hasChanges = updated.some((place, idx) =>
+          place.rating !== prevPlaces[idx].rating ||
           place.reviewCount !== prevPlaces[idx].reviewCount
         )
-        
+
         if (hasChanges) {
           setLastUpdate(new Date())
           toast.info("Live updates: New reviews received", { duration: 2000 })
         }
-        
+
         return updated
       })
     }, 15000) // Update every 15 seconds
@@ -157,7 +91,7 @@ export default function Home() {
   }, [])
 
   const handleFavoriteToggle = (id: string) => {
-    setFavorites(prev => 
+    setFavorites(prev =>
       prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
     )
   }
@@ -167,21 +101,21 @@ export default function Home() {
       toast.error("Please enter a search query")
       return
     }
-    
+
     const params = new URLSearchParams({
       q: searchQuery,
       lat: currentLocation.lat.toString(),
       lng: currentLocation.lng.toString()
     })
-    
+
     if (selectedCategory) {
       params.append("category", selectedCategory)
     }
-    
+
     if (selectedVibe) {
       params.append("vibe", selectedVibe)
     }
-    
+
     router.push(`/search?${params.toString()}`)
   }
 
@@ -191,11 +125,11 @@ export default function Home() {
       lat: currentLocation.lat.toString(),
       lng: currentLocation.lng.toString()
     })
-    
+
     if (selectedVibe) {
       params.append("vibe", selectedVibe)
     }
-    
+
     router.push(`/search?${params.toString()}`)
   }
 
@@ -265,7 +199,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-primary/10 to-background border-b">
         <div className="container mx-auto px-4 py-12 md:py-20">
@@ -283,7 +217,7 @@ export default function Home() {
             <p className="text-lg md:text-xl text-muted-foreground">
               Find and book the best restaurants, cafes, spas, and experiences across India with real-time updates
             </p>
-            
+
             {/* Search Bar with AI */}
             <div className="flex flex-col gap-3 max-w-2xl mx-auto mt-8">
               <div className="flex flex-col sm:flex-row gap-3">
@@ -315,8 +249,8 @@ export default function Home() {
                     className="h-8 gap-1 text-xs"
                     onClick={() => {
                       setSelectedVibe(selectedVibe === vibe.value ? "" : vibe.value)
-                      toast.success(selectedVibe === vibe.value 
-                        ? "Vibe filter removed" 
+                      toast.success(selectedVibe === vibe.value
+                        ? "Vibe filter removed"
                         : `${vibe.label} vibe selected`)
                     }}
                   >
@@ -329,23 +263,29 @@ export default function Home() {
 
             {/* Quick Location */}
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>Searching near: 
-                <button 
-                  onClick={handleGetCurrentLocation}
-                  disabled={isGettingLocation}
-                  className="text-primary font-medium hover:underline ml-1 disabled:opacity-50"
-                >
-                  {isGettingLocation ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin inline" />
-                      Getting location...
-                    </span>
-                  ) : (
-                    currentLocation.name
-                  )}
-                </button>
-              </span>
+              <span>Searching near:</span>
+              <LocationPicker
+                currentLocation={currentLocation}
+                onLocationSelect={(loc) => {
+                  setCurrentLocation(loc)
+                  toast.success(`Location updated to ${loc.name}`)
+
+                  // Redirect to search with new location
+                  const params = new URLSearchParams({
+                    q: searchQuery || "restaurants cafes near me",
+                    lat: loc.lat.toString(),
+                    lng: loc.lng.toString()
+                  })
+
+                  if (selectedVibe) {
+                    params.append("vibe", selectedVibe)
+                  }
+
+                  router.push(`/search?${params.toString()}`)
+                }}
+                isGettingLocation={isGettingLocation}
+                onGetCurrentLocation={handleGetCurrentLocation}
+              />
             </div>
           </div>
         </div>
@@ -384,7 +324,7 @@ export default function Home() {
               {places.length} places found • Live updates enabled
             </p>
           </div>
-          
+
           <Tabs value={view} onValueChange={(v) => setView(v as "list" | "map")}>
             <TabsList>
               <TabsTrigger value="list" className="gap-2">
@@ -439,16 +379,16 @@ export default function Home() {
               Create an account to save your favorite places and make bookings with real-time availability
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="min-w-[200px]"
                 onClick={() => router.push("/account")}
               >
                 Get Started
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="min-w-[200px]"
                 onClick={() => {
                   toast.info("Learn more about NearMe India features")

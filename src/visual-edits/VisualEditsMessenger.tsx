@@ -27,118 +27,118 @@ export type ParentToChild =
   | { type: typeof CHANNEL; msg: "SCROLL"; dx: number; dy: number }
   | { type: typeof CHANNEL; msg: "CLEAR_INLINE_STYLES"; elementId: string }
   | {
-      type: typeof CHANNEL;
-      msg: "PREVIEW_FONT";
-      elementId: string;
-      fontFamily: string;
-    }
+    type: typeof CHANNEL;
+    msg: "PREVIEW_FONT";
+    elementId: string;
+    fontFamily: string;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "RESIZE_ELEMENT";
-      elementId: string;
-      width: number;
-      height: number;
-    }
+    type: typeof CHANNEL;
+    msg: "RESIZE_ELEMENT";
+    elementId: string;
+    width: number;
+    height: number;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "SHOW_ELEMENT_HOVER";
-      elementId: string | null;
-    };
+    type: typeof CHANNEL;
+    msg: "SHOW_ELEMENT_HOVER";
+    elementId: string | null;
+  };
 
 export type ChildToParent =
   | {
-      type: typeof CHANNEL;
-      msg: "HIT";
-      id: string | null;
-      tag: string | null;
-      rect: { top: number; left: number; width: number; height: number } | null;
-    }
+    type: typeof CHANNEL;
+    msg: "HIT";
+    id: string | null;
+    tag: string | null;
+    rect: { top: number; left: number; width: number; height: number } | null;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "ELEMENT_CLICKED";
-      id: string | null;
-      tag: string | null;
-      rect: { top: number; left: number; width: number; height: number };
-      clickPosition: { x: number; y: number };
-      isEditable?: boolean;
-      currentStyles?: {
-        fontSize?: string;
-        color?: string;
-        fontWeight?: string;
-        fontStyle?: string;
-        textDecoration?: string;
-        textAlign?: string;
-        lineHeight?: string;
-        letterSpacing?: string;
-        paddingLeft?: string;
-        paddingRight?: string;
-        paddingTop?: string;
-        paddingBottom?: string;
-        marginLeft?: string;
-        marginRight?: string;
-        marginTop?: string;
-        marginBottom?: string;
-        backgroundColor?: string;
-        backgroundImage?: string;
-        borderRadius?: string;
-        fontFamily?: string;
-        opacity?: string;
-        display?: string;
-        flexDirection?: string;
-        alignItems?: string;
-        justifyContent?: string;
-        gap?: string;
-      };
-      className?: string;
-      src?: string;
-    }
+    type: typeof CHANNEL;
+    msg: "ELEMENT_CLICKED";
+    id: string | null;
+    tag: string | null;
+    rect: { top: number; left: number; width: number; height: number };
+    clickPosition: { x: number; y: number };
+    isEditable?: boolean;
+    currentStyles?: {
+      fontSize?: string;
+      color?: string;
+      fontWeight?: string;
+      fontStyle?: string;
+      textDecoration?: string;
+      textAlign?: string;
+      lineHeight?: string;
+      letterSpacing?: string;
+      paddingLeft?: string;
+      paddingRight?: string;
+      paddingTop?: string;
+      paddingBottom?: string;
+      marginLeft?: string;
+      marginRight?: string;
+      marginTop?: string;
+      marginBottom?: string;
+      backgroundColor?: string;
+      backgroundImage?: string;
+      borderRadius?: string;
+      fontFamily?: string;
+      opacity?: string;
+      display?: string;
+      flexDirection?: string;
+      alignItems?: string;
+      justifyContent?: string;
+      gap?: string;
+    };
+    className?: string;
+    src?: string;
+  }
   | { type: typeof CHANNEL; msg: "SCROLL_STARTED" }
   | { type: typeof CHANNEL; msg: "SCROLL_STOPPED" }
   | {
-      type: typeof CHANNEL;
-      msg: "TEXT_CHANGED";
-      id: string;
-      oldText: string;
-      newText: string;
-      filePath: string;
-      line: number;
-      column: number;
-    }
+    type: typeof CHANNEL;
+    msg: "TEXT_CHANGED";
+    id: string;
+    oldText: string;
+    newText: string;
+    filePath: string;
+    line: number;
+    column: number;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "STYLE_CHANGED";
-      id: string;
-      styles: Record<string, string>;
-      filePath: string;
-      line: number;
-      column: number;
-    }
+    type: typeof CHANNEL;
+    msg: "STYLE_CHANGED";
+    id: string;
+    styles: Record<string, string>;
+    filePath: string;
+    line: number;
+    column: number;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "STYLE_BLUR";
-      id: string;
-      styles: Record<string, string>;
-      filePath: string;
-      line: number;
-      column: number;
-      className: string;
-    }
+    type: typeof CHANNEL;
+    msg: "STYLE_BLUR";
+    id: string;
+    styles: Record<string, string>;
+    filePath: string;
+    line: number;
+    column: number;
+    className: string;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "IMAGE_BLUR";
-      id: string;
-      oldSrc: string;
-      newSrc: string;
-      filePath: string;
-      line: number;
-      column: number;
-    }
+    type: typeof CHANNEL;
+    msg: "IMAGE_BLUR";
+    id: string;
+    oldSrc: string;
+    newSrc: string;
+    filePath: string;
+    line: number;
+    column: number;
+  }
   | {
-      type: typeof CHANNEL;
-      msg: "FOCUS_MOVED";
-      id: string;
-      rect: { top: number; left: number; width: number; height: number };
-    }
+    type: typeof CHANNEL;
+    msg: "FOCUS_MOVED";
+    id: string;
+    rect: { top: number; left: number; width: number; height: number };
+  }
   | { type: typeof CHANNEL; msg: "VISUAL_EDIT_MODE_ACK"; active: boolean }
   | { type: typeof CHANNEL; msg: "VISUAL_EDIT_MODE_RESTORED"; active: boolean };
 
@@ -405,9 +405,13 @@ export default function HoverReceiver() {
   const [focusedElementId, setFocusedElementId] = useState<string | null>(null);
   const [isVisualEditMode, setIsVisualEditMode] = useState(() => {
     // Initialize from localStorage if available
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(VISUAL_EDIT_MODE_KEY);
-      return stored === "true";
+    if (typeof window !== "undefined" && window.localStorage && typeof window.localStorage.getItem === 'function') {
+      try {
+        const stored = window.localStorage.getItem(VISUAL_EDIT_MODE_KEY);
+        return stored === "true";
+      } catch (e) {
+        console.error("Failed to access localStorage:", e);
+      }
     }
     return false;
   });
@@ -455,8 +459,12 @@ export default function HoverReceiver() {
   useEffect(() => {
     isVisualEditModeRef.current = isVisualEditMode;
     // Persist to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem(VISUAL_EDIT_MODE_KEY, String(isVisualEditMode));
+    if (typeof window !== "undefined" && window.localStorage && typeof window.localStorage.setItem === 'function') {
+      try {
+        window.localStorage.setItem(VISUAL_EDIT_MODE_KEY, String(isVisualEditMode));
+      } catch (e) {
+        console.error("Failed to write to localStorage:", e);
+      }
     }
   }, [isVisualEditMode]);
 
@@ -478,9 +486,14 @@ export default function HoverReceiver() {
 
       // Restore focused element after a short delay to ensure DOM is ready
       setTimeout(() => {
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && window.localStorage && typeof window.localStorage.getItem === 'function') {
           // Restore focused element
-          const focusedData = localStorage.getItem(FOCUSED_ELEMENT_KEY);
+          let focusedData = null;
+          try {
+            focusedData = window.localStorage.getItem(FOCUSED_ELEMENT_KEY);
+          } catch (e) {
+            console.error("Failed to read from localStorage:", e);
+          }
           if (focusedData) {
             try {
               const { id } = JSON.parse(focusedData);
@@ -1697,17 +1710,17 @@ export default function HoverReceiver() {
           tag: tagName,
           rect: expandedBox
             ? {
-                top: expandedBox.top,
-                left: expandedBox.left,
-                width: expandedBox.width,
-                height: expandedBox.height,
-              }
+              top: expandedBox.top,
+              left: expandedBox.left,
+              width: expandedBox.width,
+              height: expandedBox.height,
+            }
             : {
-                top: 0,
-                left: 0,
-                width: 0,
-                height: 0,
-              },
+              top: 0,
+              left: 0,
+              width: 0,
+              height: 0,
+            },
           clickPosition: {
             x: e.clientX,
             y: e.clientY,

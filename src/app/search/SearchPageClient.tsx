@@ -11,6 +11,7 @@ type SearchPageClientProps = {
 
 import { Navigation } from "@/components/Navigation"
 import { PlaceCard } from "@/components/PlaceCard"
+import { LocationPicker } from "@/components/LocationPicker"
 import { FilterPanel, FilterState } from "@/components/FilterPanel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -37,7 +38,7 @@ const vibeOptions = [
 function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   const previousUrlRef = useRef<string>("")
   const hasInitialized = useRef(false)
-  
+
   const [view, setView] = useState<"list" | "map">("list")
   const [sortBy, setSortBy] = useState("relevance")
   const [favorites, setFavorites] = useState<string[]>([])
@@ -125,8 +126,8 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
               })
 
               const data = await response.json()
-              const locationName = data.success && data.locationName 
-                ? data.locationName 
+              const locationName = data.success && data.locationName
+                ? data.locationName
                 : `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
 
               setCurrentLocation({ lat, lng, name: locationName })
@@ -232,13 +233,13 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   // Real-time updates - refresh data every 30 seconds
   useEffect(() => {
     if (results.length === 0) return
-    
+
     const interval = setInterval(() => {
       // Silently refresh data in background
       performAISearch(
-        searchQuery || "restaurants cafes near me", 
-        currentLocation.lat, 
-        currentLocation.lng, 
+        searchQuery || "restaurants cafes near me",
+        currentLocation.lat,
+        currentLocation.lng,
         selectedVibe,
         true // silent mode
       )
@@ -251,12 +252,12 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
     if ("geolocation" in navigator) {
       setIsGettingLocation(true)
       toast.loading("Getting your current location...")
-      
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude
           const lng = position.coords.longitude
-          
+
           // Reverse geocode to get location name via API
           try {
             const response = await fetch("/api/reverse-geocode", {
@@ -266,37 +267,37 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
               },
               body: JSON.stringify({ lat, lng })
             })
-            
+
             const data = await response.json()
-            
-            const locationName = data.success && data.locationName 
-              ? data.locationName 
+
+            const locationName = data.success && data.locationName
+              ? data.locationName
               : `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
-            
+
             setCurrentLocation({
               lat,
               lng,
               name: locationName
             })
-            
+
             toast.success("Location updated! Refreshing places...")
             setIsGettingLocation(false)
-            
+
             // Trigger search with current location
             await performAISearch(searchQuery || "restaurants cafes near me", lat, lng, selectedVibe)
           } catch (error) {
             console.error("Reverse geocoding error:", error)
-            
+
             // Fallback to coordinates
             setCurrentLocation({
               lat,
               lng,
               name: `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
             })
-            
+
             toast.success("Location updated! Refreshing places...")
             setIsGettingLocation(false)
-            
+
             await performAISearch(searchQuery || "restaurants cafes near me", lat, lng, selectedVibe)
           }
         },
@@ -320,7 +321,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
       setIsSearching(true)
       setApiError(null) // Clear previous errors
     }
-    
+
     try {
       const response = await fetch("/api/search-ai", {
         method: "POST",
@@ -348,7 +349,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
           toast.error("OpenAI API credits exhausted", { duration: 5000 })
           return
         }
-        
+
         if (data.errorType === "GOOGLE_QUOTA_EXCEEDED") {
           setApiError({
             type: "GOOGLE_QUOTA",
@@ -357,7 +358,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
           toast.error("Google Places API limit reached", { duration: 5000 })
           return
         }
-        
+
         if (!silent) {
           toast.error(data.error || "Search failed")
         }
@@ -401,7 +402,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   }
 
   const handleFavoriteToggle = (id: string) => {
-    setFavorites(prev => 
+    setFavorites(prev =>
       prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
     )
   }
@@ -418,7 +419,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
 
   const sortedResults = useMemo(() => {
     let sorted = [...results]
-    
+
     switch (sortBy) {
       case "distance":
         sorted.sort((a, b) => a.distanceValue - b.distanceValue)
@@ -433,7 +434,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
       default:
         break
     }
-    
+
     return sorted
   }, [sortBy, results])
 
@@ -448,7 +449,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-6">
         {/* API Error Alert */}
         {apiError && (
@@ -509,11 +510,11 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                 onKeyPress={handleKeyPress}
               />
             </div>
-            
+
             {/* Search Button */}
-            <Button 
-              size="lg" 
-              className="h-12 px-8 gap-2" 
+            <Button
+              size="lg"
+              className="h-12 px-8 gap-2"
               onClick={handleSearch}
               disabled={isSearching}
             >
@@ -544,8 +545,8 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                   className="h-8 gap-1 text-xs"
                   onClick={() => {
                     setSelectedVibe(selectedVibe === vibe.value ? "" : vibe.value)
-                    toast.success(selectedVibe === vibe.value 
-                      ? "Vibe filter removed" 
+                    toast.success(selectedVibe === vibe.value
+                      ? "Vibe filter removed"
                       : `${vibe.label} vibe selected`)
                   }}
                 >
@@ -556,26 +557,27 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
             </div>
 
             {/* Current Location Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 ml-auto"
-              onClick={handleGetCurrentLocation}
-              disabled={isGettingLocation}
-            >
-              {isGettingLocation ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Getting location...
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-4 w-4" />
-                  <span className="hidden sm:inline">{currentLocation.name}</span>
-                  <span className="sm:hidden">Current Location</span>
-                </>
-              )}
-            </Button>
+            <LocationPicker
+              currentLocation={currentLocation}
+              onLocationSelect={(loc) => {
+                setCurrentLocation(loc)
+                toast.success(`Location updated to ${loc.name}`)
+
+                // Update URL and trigger search
+                const params = new URLSearchParams(window.location.search)
+                params.set("lat", loc.lat.toString())
+                params.set("lng", loc.lng.toString())
+
+                // Use router.push to update URL without full reload, but trigger effect
+                const newUrl = `/search?${params.toString()}`
+                window.history.pushState({}, "", newUrl)
+
+                // Trigger search with new location
+                performAISearch(searchQuery, loc.lat, loc.lng, selectedVibe)
+              }}
+              isGettingLocation={isGettingLocation}
+              onGetCurrentLocation={handleGetCurrentLocation}
+            />
           </div>
         </div>
 
@@ -597,7 +599,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
               )}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Select value={sortBy} onValueChange={handleSortChange}>
               <SelectTrigger className="w-[180px]">
@@ -610,7 +612,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                 <SelectItem value="reviews">Most Reviewed</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <div className="flex items-center border rounded-lg">
               <Button
                 variant={view === "list" ? "default" : "ghost"}
@@ -679,7 +681,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                         />
                       ))}
                     </div>
-                    
+
                     {displayedResults.length === 0 && !isSearching && (
                       <div className="text-center py-12">
                         <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -687,7 +689,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                         <p className="text-muted-foreground">Try adjusting your search or filters</p>
                       </div>
                     )}
-                    
+
                     {/* Load More */}
                     {hasMore && (
                       <div className="mt-8 text-center">
@@ -696,7 +698,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
                         </Button>
                       </div>
                     )}
-                    
+
                     {!hasMore && sortedResults.length > 6 && (
                       <div className="mt-8 text-center">
                         <p className="text-muted-foreground">

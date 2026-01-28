@@ -15,28 +15,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-const placeData = {
-  id: "1",
-  name: "Café Madras",
-  category: "South Indian Cafe",
-  rating: 4.8,
-  reviewCount: 1234,
-  distance: "0.8 km",
-  price: "₹₹",
-  address: "15/218-1, Linking Road, Bandra West, Mumbai, Maharashtra 400050",
-  phone: "+91 98765 43210",
-  website: "www.cafemadras.in",
-  hours: "Mon-Sun: 7:00 AM - 11:00 PM",
-  description: "An authentic South Indian cafe serving traditional filter coffee, freshly made dosas, idlis, and vadas. Experience the taste of Chennai in the heart of Mumbai with our family recipes passed down through generations.",
-  images: [
-    "https://images.unsplash.com/photo-1630409774334-e2d1c85bf6e7?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1589301773859-bb024d3f2e03?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=1200&h=800&fit=crop",
-    "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=1200&h=800&fit=crop"
-  ],
-  amenities: ["WiFi", "AC", "Outdoor Seating", "Wheelchair Accessible", "Parking", "UPI/Cards Accepted"],
-  isOpen: true
-}
+import { getPlaceById, Place } from "@/data/places"
 
 const reviews = [
   {
@@ -83,20 +62,56 @@ export default function PlaceDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false)
   const [helpfulReviews, setHelpfulReviews] = useState<Record<string, boolean>>({})
   const [visibleReviewCount, setVisibleReviewCount] = useState(3)
-  const [placeInfo, setPlaceInfo] = useState(placeData)
+  const [placeInfo, setPlaceInfo] = useState<Place | null>(null)
   const [lastUpdate, setLastUpdate] = useState(new Date())
+
+  useEffect(() => {
+    const fetchPlace = async () => {
+      if (!params?.id) return
+
+      const id = Array.isArray(params.id) ? params.id[0] : params.id
+
+      // First try static data
+      const staticPlace = getPlaceById(id)
+      if (staticPlace) {
+        setPlaceInfo(staticPlace)
+        return
+      }
+
+      // If not found, fetch from API
+      try {
+        const response = await fetch(`/api/place-details?placeId=${id}`)
+        const data = await response.json()
+
+        if (data.success && data.place) {
+          setPlaceInfo(data.place)
+        } else {
+          toast.error("Place details not found")
+          router.push("/")
+        }
+      } catch (error) {
+        toast.error("Failed to load place details")
+        router.push("/")
+      }
+    }
+
+    fetchPlace()
+  }, [params, router])
 
   // Real-time updates
   useEffect(() => {
+    if (!placeInfo) return
+
     const interval = setInterval(() => {
       setPlaceInfo(prev => {
+        if (!prev) return null
         if (Math.random() < 0.2) {
           const newRating = Math.min(5, Math.max(4.5, prev.rating + (Math.random() - 0.5) * 0.05))
           const newReviewCount = prev.reviewCount + Math.floor(Math.random() * 2)
-          
+
           setLastUpdate(new Date())
           toast.info("New review received", { duration: 2000 })
-          
+
           return {
             ...prev,
             rating: parseFloat(newRating.toFixed(1)),
@@ -108,7 +123,18 @@ export default function PlaceDetailPage() {
     }, 25000) // Update every 25 seconds
 
     return () => clearInterval(interval)
-  }, [])
+  }, [placeInfo])
+
+  if (!placeInfo) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Activity className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading place details...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleBooking = (bookingData: BookingData) => {
     toast.success(
@@ -117,11 +143,13 @@ export default function PlaceDetailPage() {
   }
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % placeInfo.images.length)
+    if (!placeInfo?.images?.length) return
+    setCurrentImageIndex((prev) => (prev + 1) % placeInfo.images!.length)
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + placeInfo.images.length) % placeInfo.images.length)
+    if (!placeInfo?.images?.length) return
+    setCurrentImageIndex((prev) => (prev - 1 + placeInfo.images!.length) % placeInfo.images!.length)
   }
 
   const handleFavoriteToggle = () => {
@@ -170,7 +198,7 @@ export default function PlaceDetailPage() {
   }
 
   const handleDirections = () => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeInfo.address)}`
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeInfo.address || placeInfo.name)}`
     window.open(mapsUrl, '_blank', 'noopener,noreferrer')
     toast.info("Opening directions in Google Maps")
   }
@@ -186,7 +214,7 @@ export default function PlaceDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-6">
         {/* Back Button */}
         <Button variant="ghost" className="mb-4" onClick={() => router.back()}>
@@ -197,37 +225,41 @@ export default function PlaceDetailPage() {
         {/* Image Gallery */}
         <div className="relative h-[400px] rounded-lg overflow-hidden mb-6">
           <Image
-            src={placeInfo.images[currentImageIndex]}
+            src={placeInfo.images?.[currentImageIndex] || placeInfo.image}
             alt={placeInfo.name}
             fill
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          
+
           {/* Gallery Navigation */}
-          <div className="absolute inset-0 flex items-center justify-between p-4">
-            <Button
-              size="icon"
-              variant="secondary"
-              className="rounded-full"
-              onClick={prevImage}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              size="icon"
-              variant="secondary"
-              className="rounded-full"
-              onClick={nextImage}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
+          {placeInfo.images && placeInfo.images.length > 1 && (
+            <div className="absolute inset-0 flex items-center justify-between p-4">
+              <Button
+                size="icon"
+                variant="secondary"
+                className="rounded-full"
+                onClick={prevImage}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="rounded-full"
+                onClick={nextImage}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-            {currentImageIndex + 1} / {placeInfo.images.length}
-          </div>
+          {placeInfo.images && placeInfo.images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+              {currentImageIndex + 1} / {placeInfo.images.length}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="absolute top-4 right-4 flex gap-2">
@@ -268,7 +300,7 @@ export default function PlaceDetailPage() {
                   {placeInfo.isOpen ? "Open Now" : "Closed"}
                 </Badge>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-4 mt-4">
                 <div className="flex items-center gap-1">
                   <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
@@ -294,7 +326,7 @@ export default function PlaceDetailPage() {
             <div>
               <h2 className="text-2xl font-bold mb-3">Amenities</h2>
               <div className="flex flex-wrap gap-2">
-                {placeInfo.amenities.map((amenity) => (
+                {placeInfo.amenities?.map((amenity) => (
                   <Badge key={amenity} variant="outline" className="text-sm">
                     {amenity}
                   </Badge>
@@ -313,8 +345,8 @@ export default function PlaceDetailPage() {
                   <div className="flex-1">
                     <p className="font-medium">Address</p>
                     <p className="text-muted-foreground">{placeInfo.address}</p>
-                    <Button 
-                      variant="link" 
+                    <Button
+                      variant="link"
                       className="h-auto p-0 mt-1 text-primary"
                       onClick={handleDirections}
                     >
@@ -326,7 +358,7 @@ export default function PlaceDetailPage() {
                   <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Phone</p>
-                    <button 
+                    <button
                       onClick={handlePhoneClick}
                       className="text-muted-foreground hover:text-primary"
                     >
@@ -338,7 +370,7 @@ export default function PlaceDetailPage() {
                   <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Website</p>
-                    <button 
+                    <button
                       onClick={handleWebsiteClick}
                       className="text-primary hover:underline"
                     >
@@ -361,7 +393,7 @@ export default function PlaceDetailPage() {
             {/* Reviews */}
             <div>
               <h2 className="text-2xl font-bold mb-4">Reviews</h2>
-              
+
               {/* Rating Breakdown */}
               <Card className="mb-6">
                 <CardContent className="p-6">
@@ -372,11 +404,10 @@ export default function PlaceDetailPage() {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`h-5 w-5 ${
-                              star <= Math.round(placeInfo.rating)
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-muted-foreground"
-                            }`}
+                            className={`h-5 w-5 ${star <= Math.round(placeInfo.rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-muted-foreground"
+                              }`}
                           />
                         ))}
                       </div>
@@ -416,11 +447,10 @@ export default function PlaceDetailPage() {
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <Star
                                       key={star}
-                                      className={`h-4 w-4 ${
-                                        star <= review.rating
-                                          ? "fill-yellow-400 text-yellow-400"
-                                          : "text-muted-foreground"
-                                      }`}
+                                      className={`h-4 w-4 ${star <= review.rating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-muted-foreground"
+                                        }`}
                                     />
                                   ))}
                                 </div>
@@ -429,8 +459,8 @@ export default function PlaceDetailPage() {
                             </div>
                           </div>
                           <p className="text-muted-foreground mb-3">{review.text}</p>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleHelpfulClick(review.id)}
                             className={helpfulReviews[review.id] ? "text-primary" : ""}
@@ -445,8 +475,8 @@ export default function PlaceDetailPage() {
               </div>
 
               {hasMoreReviews && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full mt-4"
                   onClick={handleLoadMoreReviews}
                 >

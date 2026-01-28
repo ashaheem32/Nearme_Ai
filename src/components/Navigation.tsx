@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { AuthModal } from "@/components/AuthModal"
 import { toast } from "sonner"
+import { LocationPicker } from "@/components/LocationPicker"
 
 export function Navigation() {
   const router = useRouter()
@@ -28,13 +29,13 @@ export function Navigation() {
       toast.error("Please enter a search query")
       return
     }
-    
+
     const params = new URLSearchParams({
       q: searchQuery,
       lat: "19.0760",
       lng: "72.8777"
     })
-    
+
     router.push(`/search?${params.toString()}`)
   }
 
@@ -133,10 +134,23 @@ export function Navigation() {
                   onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 />
               </div>
-              <Button variant="outline" className="gap-2 shrink-0" onClick={handleLocationClick}>
-                <MapPin className="h-4 w-4" />
-                <span className="hidden lg:inline">{location}</span>
-              </Button>
+              <LocationPicker
+                currentLocation={{ lat: 0, lng: 0, name: location }}
+                onLocationSelect={(loc) => {
+                  setLocation(loc.name)
+                  toast.success(`Location updated to ${loc.name}`)
+
+                  // Redirect to search with new location
+                  const params = new URLSearchParams({
+                    q: searchQuery || "restaurants cafes near me",
+                    lat: loc.lat.toString(),
+                    lng: loc.lng.toString()
+                  })
+                  router.push(`/search?${params.toString()}`)
+                }}
+                isGettingLocation={false}
+                onGetCurrentLocation={handleLocationClick}
+              />
             </div>
 
             {/* Desktop Navigation */}
@@ -179,12 +193,19 @@ export function Navigation() {
                         onKeyPress={handleKeyPress}
                       />
                     </div>
-                    <Button variant="outline" className="w-full justify-start gap-2" onClick={handleLocationClick}>
-                      <MapPin className="h-4 w-4" />
-                      {location}
-                    </Button>
+                    <div className="w-full">
+                      <LocationPicker
+                        currentLocation={{ lat: 0, lng: 0, name: location }}
+                        onLocationSelect={(loc) => {
+                          setLocation(loc.name)
+                          toast.success(`Location updated to ${loc.name}`)
+                        }}
+                        isGettingLocation={false}
+                        onGetCurrentLocation={handleLocationClick}
+                      />
+                    </div>
                   </div>
-                  
+
                   <div className="flex flex-col gap-2">
                     <Button variant="ghost" className="justify-start" asChild>
                       <Link href="/favorites">
@@ -199,7 +220,7 @@ export function Navigation() {
                       </Link>
                     </Button>
                   </div>
-                  
+
                   <Button className="w-full" onClick={() => handleAuthClick("login")}>
                     Sign In
                   </Button>
@@ -230,8 +251,8 @@ export function Navigation() {
         </div>
       </nav>
 
-      <AuthModal 
-        open={showAuthModal} 
+      <AuthModal
+        open={showAuthModal}
         onOpenChange={setShowAuthModal}
         defaultTab={authTab}
       />

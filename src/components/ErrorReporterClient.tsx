@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 export default function ErrorReporterClient() {
   /* ─ instrumentation shared by every route ─ */
   const lastOverlayMsg = useRef("");
-  const pollRef = useRef<NodeJS.Timeout>();
+  const pollRef = useRef<NodeJS.Timeout>(undefined);
 
   useEffect(() => {
     const inIframe = window.parent !== window;

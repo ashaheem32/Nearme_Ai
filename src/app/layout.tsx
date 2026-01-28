@@ -5,6 +5,16 @@ import ErrorReporterClient from "@/components/ErrorReporterClient";
 import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 
+// Patch for broken localStorage in some environments (e.g. server-side with certain polyfills)
+if (typeof global !== 'undefined' && (global as any).localStorage && typeof (global as any).localStorage.getItem !== 'function') {
+  try {
+    console.warn('Detected broken localStorage polyfill, removing it.');
+    delete (global as any).localStorage;
+  } catch (e) {
+    console.error('Failed to remove broken localStorage:', e);
+  }
+}
+
 export const metadata: Metadata = {
   title: "NearMe - Discover Places Near You",
   description: "Find and book amazing places near you with NearMe",
