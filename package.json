@@ -114,6 +114,6 @@
     },
     "overrides": {
         "@types/prettier": "2.7.3",
-        "node-domexception": "2.0.1"
+        "node-domexception": "file:packages/node-domexception-shim"
     }
 }
