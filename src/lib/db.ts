@@ -2,14 +2,33 @@ import { createClient } from "@libsql/client"
 import { mkdirSync } from "node:fs"
 import path from "node:path"
 
-const dataDir = path.join(process.cwd(), "data")
-mkdirSync(dataDir, { recursive: true })
+const databaseUrl = process.env.DATABASE_URL?.trim()
+const databaseAuthToken = process.env.DATABASE_AUTH_TOKEN?.trim()
 
-const sqlitePath = path.join(dataDir, "nearme-auth.db")
+function getLocalSqlitePath() {
+  const dataDir =
+    process.env.NODE_ENV === "production"
+      ? "/tmp"
+      : path.join(process.cwd(), "data")
 
-export const db = createClient({
-  url: `file:${sqlitePath}`,
-})
+  mkdirSync(dataDir, { recursive: true })
+  return path.join(dataDir, "nearme-auth.db")
+}
+
+if (process.env.NODE_ENV === "production" && !databaseUrl) {
+  console.warn(
+    "DATABASE_URL is not set in production. Falling back to local /tmp SQLite, which is ephemeral.",
+  )
+}
+
+export const db = databaseUrl
+  ? createClient({
+      url: databaseUrl,
+      authToken: databaseAuthToken || undefined,
+    })
+  : createClient({
+      url: `file:${getLocalSqlitePath()}`,
+    })
 
 let hasInitialized = false
 
