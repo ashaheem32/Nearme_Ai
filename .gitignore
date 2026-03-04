@@ -62,6 +62,10 @@ logs/
 # local sqlite files
 data/*.db
 
+# local-only docs (do not push)
+Project_Explanation_and_Interview_QA.md
+RAG_INTEGRATION_GUIDE.md
+
 # turbo
 .turbo/
 .claude/

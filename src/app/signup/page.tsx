@@ -6,24 +6,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { FormEvent, useEffect, useState } from "react"
 import { toast } from "sonner"
 
 export default function SignupPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [otp, setOtp] = useState("")
   const [otpRequested, setOtpRequested] = useState(false)
+  const [nextPath, setNextPath] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setNextPath(params.get("next"))
+  }, [])
+
+  useEffect(() => {
     const checkSession = async () => {
-      const nextPath = searchParams.get("next")
       try {
         const response = await fetch("/api/auth/me")
         const data = await response.json()
@@ -39,7 +43,7 @@ export default function SignupPage() {
     }
 
     checkSession()
-  }, [router, searchParams])
+  }, [router, nextPath])
 
   const handleRequestOtp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -113,7 +117,6 @@ export default function SignupPage() {
       }
 
       toast.success("Account created successfully.")
-      const nextPath = searchParams.get("next")
       router.push(nextPath || "/account")
       router.refresh()
     } catch {
