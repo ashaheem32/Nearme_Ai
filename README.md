@@ -1,171 +1,121 @@
 # NearMe AI
 
-A smart, AI-powered local discovery and booking platform built for India. Find restaurants, cafes, spas, gyms, hotels, and more — powered by natural language search and real-time Google Places data.
-
-**Live Demo:** [nearmeai.vercel.app](https://nearmeai.vercel.app)
+NearMe AI is a location-aware discovery app that helps users find nearby restaurants, cafes, spas, gyms, hotels, and more using AI-assisted search and Google Places data.
 
 ---
 
-## Features
+## Current Features
 
-- **AI-Powered Search** — Ask in plain English (e.g. "best coffee near me", "romantic dinner spots in Mumbai") and get relevant results powered by OpenAI
-- **Vibe Filters** — Filter by mood: Romantic, Cozy, Vibrant, Peaceful, Luxury, Casual, Trendy, Traditional
-- **Location-Aware Discovery** — Automatically detects your location or lets you search for a specific area
-- **Live Place Data** — Real-time info from Google Places including photos, reviews, hours, ratings, and contact details
-- **Smart Filters & Sorting** — Filter by category, distance, rating, and open-now status; sort by relevance, distance, rating, or review count
-- **Place Details** — Rich detail pages with image galleries, descriptions, amenities, reviews, and a booking widget
-- **Favorites** — Save places you love for quick access later
-- **Booking Widget** — Select date, time, and guests to make reservations
-- **Responsive Design** — Fully optimized for desktop and mobile
+- AI search with natural language queries
+- Category + vibe based discovery
+- Current-location aware category routing
+- Search filters, sorting, and live result refresh
+- Place detail pages with gallery, reviews, and booking widget
+- User authentication with email/password login
+- **OTP email verification for signup**
+- Account page with:
+  - personal details
+  - recommendation preferences
+  - OTP-protected delete account flow
+- User-specific persistent favorites:
+  - save/remove favorites across home/search/place pages
+  - favorites page loads from DB
+  - if not logged in, user is redirected to login then favorite is saved after auth
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| **Framework** | [Next.js 15](https://nextjs.org/) (App Router) |
-| **Language** | TypeScript |
-| **UI** | React 19, [Tailwind CSS 4](https://tailwindcss.com/) |
-| **Components** | [shadcn/ui](https://ui.shadcn.com/) (Radix UI primitives) |
-| **Animations** | [Framer Motion](https://www.framer.com/motion/) |
-| **Forms** | React Hook Form + Zod |
-| **Database** | [Turso](https://turso.tech/) (LibSQL) |
-| **Auth** | [Better Auth](https://www.better-auth.com/) |
-| **Payments** | [Stripe](https://stripe.com/) |
-| **AI** | [OpenAI](https://openai.com/) (GPT-4o-mini) |
-| **Maps & Places** | [Google Maps Platform](https://developers.google.com/maps) |
-| **Deployment** | [Vercel](https://vercel.com/) |
+- Next.js 15 (App Router)
+- TypeScript + React 19
+- Tailwind CSS + shadcn/ui
+- SQLite (LibSQL client, local file at `data/nearme-auth.db`)
+- OpenAI + Google Places APIs
+- Nodemailer (OTP email delivery)
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 20+
-- npm 9+
-- An [OpenAI API key](https://platform.openai.com/api-keys)
-- A [Google Cloud API key](https://console.cloud.google.com/) with these APIs enabled:
-  - Places API
-  - Geocoding API
-  - Places Photos API
-
-### Installation
+### 1) Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/ashaheem32/Nearme_Ai.git
-cd Nearme_Ai
-
-# Install dependencies
-npm install --legacy-peer-deps
+npm install
 ```
 
-### Environment Setup
+### 2) Environment variables
+
+Create `.env` (or copy from `.env.example`) and set:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `OPENAI_API_KEY` | Yes | AI query interpretation |
+| `GOOGLE_API_KEY` | Yes | Places + reverse geocoding |
+| `SMTP_HOST` | Yes (for OTP mail) | SMTP server host (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | Yes (for OTP mail) | SMTP port (e.g. `587`) |
+| `SMTP_USER` | Yes (for OTP mail) | SMTP username/email |
+| `SMTP_PASS` | Yes (for OTP mail) | SMTP password/app password |
+| `SMTP_FROM` | Yes (for OTP mail) | Sender email |
+| `SMTP_SECURE` | Optional | `true` for SSL port, else `false` |
+| `NEXT_PUBLIC_APP_URL` | Optional | App base URL |
+
+Notes:
+- If SMTP is missing, OTP still works in fallback mode (OTP logs on server console in dev).
+- `.env` and `data/*.db` are gitignored.
+
+### 3) Run
 
 ```bash
-# Copy the example env file
-cp .env.example .env
+npm run dev
 ```
 
-Edit `.env` and fill in your keys:
+Open [http://localhost:3000](http://localhost:3000).
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | Powers AI-based search intent analysis |
-| `GOOGLE_API_KEY` | Yes | Google Places, Geocoding, and Photos |
-| `DATABASE_URL` | Optional | Turso/LibSQL database URL |
-| `DATABASE_AUTH_TOKEN` | Optional | Turso auth token |
-| `BETTER_AUTH_SECRET` | Optional | Auth session secret |
-| `BETTER_AUTH_URL` | Optional | Auth callback URL |
-| `STRIPE_SECRET_KEY` | Optional | Stripe payments |
-| `STRIPE_PUBLISHABLE_KEY` | Optional | Stripe client key |
-| `STRIPE_WEBHOOK_SECRET` | Optional | Stripe webhook verification |
-| `NEXT_PUBLIC_APP_URL` | Optional | Your app URL (defaults to localhost) |
+---
 
-### Running Locally
+## Auth + OTP Flows
+
+### Signup
+1. User submits name/email/password on `/signup`
+2. Server sends OTP email
+3. User verifies OTP
+4. Account is created and session starts
+
+### Delete account
+1. User clicks "Send Delete OTP" on `/account`
+2. OTP is sent to registered email
+3. User enters OTP and confirms
+4. Account + related data are deleted and session is cleared
+
+---
+
+## Database
+
+Local SQLite file:
+
+- `data/nearme-auth.db`
+
+Main tables:
+
+- `users`
+- `sessions`
+- `user_profiles`
+- `user_preferences`
+- `user_favorites`
+- `signup_otps`
+- `account_delete_otps`
+
+---
+
+## Useful Commands
 
 ```bash
-# Development server (with Turbopack)
+# Run app
 npm run dev
 
-# Production build
+# Typecheck
+npx tsc --noEmit
+
+# Build
 npm run build
-
-# Start production server
-npm run start
 ```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── page.tsx                    # Home page
-│   ├── layout.tsx                  # Root layout
-│   ├── account/page.tsx            # User account
-│   ├── favorites/page.tsx          # Saved places
-│   ├── search/
-│   │   ├── page.tsx                # Search results (server)
-│   │   └── SearchPageClient.tsx    # Search results (client)
-│   ├── place/[id]/page.tsx         # Place detail page
-│   └── api/
-│       ├── search-ai/route.ts      # AI search + Google Places
-│       ├── places-autocomplete/    # Location autocomplete
-│       ├── place-details/          # Place detail lookup
-│       └── reverse-geocode/        # Coords → address
-├── components/
-│   ├── Navigation.tsx              # Top navigation bar
-│   ├── PlaceCard.tsx               # Place listing card
-│   ├── LocationPicker.tsx          # Location selector
-│   ├── FilterPanel.tsx             # Search filters
-│   ├── BookingWidget.tsx           # Reservation widget
-│   ├── AuthModal.tsx               # Login/signup modal
-│   └── ui/                         # shadcn/ui components
-├── data/
-│   └── places.ts                   # Featured places data
-├── hooks/
-│   ├── use-debounce.ts
-│   └── use-mobile.ts
-└── lib/
-    └── utils.ts                    # Utility functions
-```
-
----
-
-## API Routes
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/search-ai` | POST | Analyzes search intent with AI, then queries Google Places |
-| `/api/places-autocomplete` | GET | Location autocomplete suggestions |
-| `/api/place-details` | GET | Detailed info for a specific place |
-| `/api/reverse-geocode` | POST | Converts coordinates to a human-readable address |
-
----
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with Turbopack |
-| `npm run build` | Create production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-
----
-
-## Deployment
-
-This project is configured for deployment on [Vercel](https://vercel.com/). Simply connect your GitHub repository and add the required environment variables in the Vercel dashboard.
-
----
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).

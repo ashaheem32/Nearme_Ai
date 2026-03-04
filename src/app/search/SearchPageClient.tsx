@@ -6,6 +6,7 @@ type SearchPageClientProps = {
     lng?: string
     q?: string
     vibe?: string
+    category?: string
   }
 }
 
@@ -22,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { SlidersHorizontal, Map, List, Activity, Search, MapPin, Loader2, Sparkles, AlertCircle, CreditCard } from "lucide-react"
 import { useState, useMemo, useEffect, useRef } from "react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 // Vibe options for user selection
 const vibeOptions = [
@@ -36,6 +38,7 @@ const vibeOptions = [
 ]
 
 function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
+  const router = useRouter()
   const previousUrlRef = useRef<string>("")
   const hasInitialized = useRef(false)
 
@@ -73,16 +76,21 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
 
     const urlLat = urlParams.lat
     const urlLng = urlParams.lng
+    const urlCategory = urlParams.category || ""
+    const baseQuery = urlParams.q || (urlCategory ? `${urlCategory} near me` : "restaurants cafes near me")
 
     // If URL has coordinates, use them
     if (urlLat && urlLng) {
       const lat = parseFloat(urlLat)
       const lng = parseFloat(urlLng)
-      const urlQuery = urlParams.q || "restaurants cafes near me"
+      const urlQuery = baseQuery
       const urlVibe = urlParams.vibe || ""
 
       setSearchQuery(urlQuery)
       setSelectedVibe(urlVibe)
+      if (urlCategory) {
+        setFilters((prev) => ({ ...prev, categories: [urlCategory] }))
+      }
       setCurrentLocation({
         lat,
         lng,
@@ -135,8 +143,11 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
               setIsGettingLocation(false)
 
               // Auto-search with current location
-              const defaultQuery = "restaurants cafes near me"
+              const defaultQuery = baseQuery
               setSearchQuery(defaultQuery)
+              if (urlCategory) {
+                setFilters((prev) => ({ ...prev, categories: [urlCategory] }))
+              }
               await performAISearch(defaultQuery, lat, lng, "")
             } catch (error) {
               console.error("Reverse geocoding error:", error)
@@ -148,8 +159,11 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
               toast.success("Location detected! Searching nearby places...")
               setIsGettingLocation(false)
 
-              const defaultQuery = "restaurants cafes near me"
+              const defaultQuery = baseQuery
               setSearchQuery(defaultQuery)
+              if (urlCategory) {
+                setFilters((prev) => ({ ...prev, categories: [urlCategory] }))
+              }
               await performAISearch(defaultQuery, lat, lng, "")
             }
           },
@@ -179,7 +193,8 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
   useEffect(() => {
     if (!hasInitialized.current) return
 
-    const urlQuery = urlParams.q || "restaurants cafes near me"
+    const urlCategory = urlParams.category || ""
+    const urlQuery = urlParams.q || (urlCategory ? `${urlCategory} near me` : "restaurants cafes near me")
     const urlLat = urlParams.lat
     const urlLng = urlParams.lng
     const urlVibe = urlParams.vibe || ""
@@ -203,6 +218,9 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
     // Update state with URL parameters
     setSearchQuery(urlQuery)
     setSelectedVibe(urlVibe)
+    if (urlCategory) {
+      setFilters((prev) => ({ ...prev, categories: [urlCategory] }))
+    }
     setCurrentLocation({
       lat,
       lng,
@@ -228,7 +246,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
         }
       })
       .catch(err => console.error("Reverse geocode error:", err))
-  }, [urlParams.q, urlParams.lat, urlParams.lng, urlParams.vibe])
+  }, [urlParams.q, urlParams.category, urlParams.lat, urlParams.lng, urlParams.vibe])
 
   // Real-time updates - refresh data every 30 seconds
   useEffect(() => {
@@ -247,6 +265,23 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
 
     return () => clearInterval(interval)
   }, [searchQuery, currentLocation, selectedVibe, results.length])
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const response = await fetch("/api/favorites")
+        if (!response.ok) return
+        const data = await response.json()
+        if (Array.isArray(data?.favorites)) {
+          setFavorites(data.favorites.map((item: { id: string }) => item.id))
+        }
+      } catch {
+        // no-op
+      }
+    }
+
+    loadFavorites()
+  }, [])
 
   const handleGetCurrentLocation = () => {
     if ("geolocation" in navigator) {
@@ -401,10 +436,55 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
     }
   }
 
-  const handleFavoriteToggle = (id: string) => {
-    setFavorites(prev =>
-      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
-    )
+  const handleFavoriteToggle = async (
+    place: {
+      id: string
+      name: string
+      category: string
+      rating: number
+      reviewCount: number
+      distance: string
+      image: string
+      price?: string
+      isOpen?: boolean
+    },
+    nextFavoriteState: boolean,
+  ) => {
+    try {
+      const authResponse = await fetch("/api/auth/me")
+      const authData = await authResponse.json()
+
+      if (!authResponse.ok || !authData?.user) {
+        localStorage.setItem("pendingFavorite", JSON.stringify(place))
+        const nextPath = `${window.location.pathname}${window.location.search}`
+        router.push(`/login?next=${encodeURIComponent(nextPath)}`)
+        toast.info("Please login first to save favorites.")
+        return false
+      }
+
+      if (nextFavoriteState) {
+        const response = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ place }),
+        })
+        if (!response.ok) return false
+        setFavorites((prev) => Array.from(new Set([...prev, place.id])))
+        toast.success("Added to favorites")
+      } else {
+        const response = await fetch(`/api/favorites/${encodeURIComponent(place.id)}`, {
+          method: "DELETE",
+        })
+        if (!response.ok) return false
+        setFavorites((prev) => prev.filter((fav) => fav !== place.id))
+        toast.success("Removed from favorites")
+      }
+
+      return true
+    } catch {
+      toast.error("Could not update favorites right now.")
+      return false
+    }
   }
 
   const handleFilterChange = (newFilters: FilterState) => {
@@ -450,7 +530,7 @@ function SearchPageContent({ searchParams: urlParams }: SearchPageClientProps) {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 pt-24 pb-6">
         {/* API Error Alert */}
         {apiError && (
           <Alert variant="destructive" className="mb-6">

@@ -1,261 +1,162 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Search, MapPin, User, Heart, Menu, X } from "lucide-react"
+import { MapPin, User, Heart, Menu } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { AuthModal } from "@/components/AuthModal"
-import { toast } from "sonner"
-import { LocationPicker } from "@/components/LocationPicker"
+
+const navCategories = [
+  { name: "Restaurants", href: "/search?category=Restaurants" },
+  { name: "Cafes", href: "/search?category=Cafes" },
+  { name: "Hotels", href: "/search?category=Hotels" },
+  { name: "Shopping", href: "/search?category=Shopping" },
+  { name: "Gyms", href: "/search?category=Gyms" },
+  { name: "Boutiques", href: "/search?category=Boutiques" },
+]
 
 export function Navigation() {
   const router = useRouter()
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [location, setLocation] = useState("Current Location")
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authTab, setAuthTab] = useState<"login" | "signup">("login")
+  const [accountHref, setAccountHref] = useState("/login")
 
-  const handleAuthClick = (tab: "login" | "signup") => {
-    setAuthTab(tab)
-    setShowAuthModal(true)
-  }
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/me")
+        const data = await response.json()
+        if (response.ok && data?.user) {
+          setAccountHref("/account")
+        } else {
+          setAccountHref("/login")
+        }
+      } catch {
+        setAccountHref("/login")
+      }
+    }
 
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      toast.error("Please enter a search query")
+    checkSession()
+  }, [])
+
+  const navigateToCategory = (categoryName: string) => {
+    const pushWithLocation = (lat: number, lng: number) => {
+      const params = new URLSearchParams({
+        category: categoryName,
+        lat: String(lat),
+        lng: String(lng),
+      })
+      router.push(`/search?${params.toString()}`)
+    }
+
+    if (!("geolocation" in navigator)) {
+      pushWithLocation(0, 0)
       return
     }
 
-    const params = new URLSearchParams({
-      q: searchQuery,
-      lat: "19.0760",
-      lng: "72.8777"
-    })
-
-    router.push(`/search?${params.toString()}`)
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch()
-    }
-  }
-
-  const handleLocationClick = () => {
-    if ("geolocation" in navigator) {
-      const loadingToast = toast.loading("Getting your location...")
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude
-          const lng = position.coords.longitude
-
-          try {
-            // Reverse geocode to get location name
-            const response = await fetch("/api/reverse-geocode", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ lat, lng })
-            })
-
-            const data = await response.json()
-
-            const locationName = data.success && data.locationName
-              ? data.locationName
-              : `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
-
-            setLocation(locationName)
-            toast.success("Location updated! Redirecting to search...", { id: loadingToast })
-
-            // Navigate to search page with current location
-            const params = new URLSearchParams({
-              q: searchQuery || "restaurants cafes near me",
-              lat: lat.toString(),
-              lng: lng.toString()
-            })
-
-            router.push(`/search?${params.toString()}`)
-          } catch (error) {
-            console.error("Reverse geocoding error:", error)
-
-            // Fallback to coordinates
-            const locationName = `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
-            setLocation(locationName)
-            toast.success("Location updated! Redirecting to search...", { id: loadingToast })
-
-            const params = new URLSearchParams({
-              q: searchQuery || "restaurants cafes near me",
-              lat: lat.toString(),
-              lng: lng.toString()
-            })
-
-            router.push(`/search?${params.toString()}`)
-          }
-        },
-        (error) => {
-          toast.error("Unable to get your location. Please enable location services.", { id: loadingToast })
-        }
-      )
-    } else {
-      toast.error("Geolocation is not supported by your browser")
-    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        pushWithLocation(position.coords.latitude, position.coords.longitude)
+      },
+      () => {
+        pushWithLocation(0, 0)
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    )
   }
 
   return (
-    <>
-      <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4">
+    <nav className="fixed top-0 z-50 w-full bg-background/60 backdrop-blur-md border-b border-border/40">
+        <div className="container mx-auto px-4 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                 <MapPin className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-xl hidden sm:inline">NearMe</span>
+              <span className="font-bold text-xl tracking-tight text-foreground">NearMe</span>
             </Link>
 
-            {/* Desktop Search */}
-            <div className="hidden md:flex flex-1 max-w-2xl gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search places, restaurants, cafes in India..."
-                  className="pl-10 pr-4"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                />
-              </div>
-              <LocationPicker
-                currentLocation={{ lat: 0, lng: 0, name: location }}
-                onLocationSelect={(loc) => {
-                  setLocation(loc.name)
-                  toast.success(`Location updated to ${loc.name}`)
-
-                  // Redirect to search with new location
-                  const params = new URLSearchParams({
-                    q: searchQuery || "restaurants cafes near me",
-                    lat: loc.lat.toString(),
-                    lng: loc.lng.toString()
-                  })
-                  router.push(`/search?${params.toString()}`)
-                }}
-                isGettingLocation={false}
-                onGetCurrentLocation={handleLocationClick}
-              />
+            {/* Desktop Category Links */}
+            <div className="hidden lg:flex items-center gap-1">
+              {navCategories.map((cat) => (
+                <Link
+                  key={cat.name}
+                  href={cat.href}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigateToCategory(cat.name)
+                  }}
+                  className="px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {cat.name}
+                </Link>
+              ))}
             </div>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Right Side */}
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
                 <Link href="/favorites">
                   <Heart className="h-4 w-4 mr-2" />
                   Favorites
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/account">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+                <Link href={accountHref}>
                   <User className="h-4 w-4 mr-2" />
                   Account
                 </Link>
-              </Button>
-              <Button size="sm" onClick={() => handleAuthClick("login")}>
-                Sign In
               </Button>
             </div>
 
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="md:hidden text-foreground">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-card border-border">
                 <div className="flex flex-col gap-6 mt-6">
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="search"
-                        placeholder="Search places..."
-                        className="pl-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                      />
-                    </div>
-                    <div className="w-full">
-                      <LocationPicker
-                        currentLocation={{ lat: 0, lng: 0, name: location }}
-                        onLocationSelect={(loc) => {
-                          setLocation(loc.name)
-                          toast.success(`Location updated to ${loc.name}`)
+                  {/* Mobile Category Links */}
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 px-3">Categories</p>
+                    {navCategories.map((cat) => (
+                      <Link
+                        key={cat.name}
+                        href={cat.href}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          navigateToCategory(cat.name)
                         }}
-                        isGettingLocation={false}
-                        onGetCurrentLocation={handleLocationClick}
-                      />
-                    </div>
+                        className="px-3 py-2.5 text-sm text-foreground hover:text-primary hover:bg-accent rounded-lg transition-colors"
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <Button variant="ghost" className="justify-start" asChild>
+                  <div className="h-px bg-border" />
+
+                  <div className="flex flex-col gap-1">
+                    <Button variant="ghost" className="justify-start text-foreground" asChild>
                       <Link href="/favorites">
                         <Heart className="h-4 w-4 mr-2" />
                         Favorites
                       </Link>
                     </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/account">
+                    <Button variant="ghost" className="justify-start text-foreground" asChild>
+                      <Link href={accountHref}>
                         <User className="h-4 w-4 mr-2" />
                         Account
                       </Link>
                     </Button>
                   </div>
-
-                  <Button className="w-full" onClick={() => handleAuthClick("login")}>
-                    Sign In
-                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
           </div>
-
-          {/* Mobile Search Bar */}
-          <div className="md:hidden pb-3">
-            <div className="relative flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search in India..."
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                />
-              </div>
-              <Button size="icon" variant="outline" onClick={handleSearch}>
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </div>
       </nav>
-
-      <AuthModal
-        open={showAuthModal}
-        onOpenChange={setShowAuthModal}
-        defaultTab={authTab}
-      />
-    </>
   )
 }

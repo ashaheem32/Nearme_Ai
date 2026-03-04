@@ -5,61 +5,84 @@ import { PlaceCard } from "@/components/PlaceCard"
 import { Button } from "@/components/ui/button"
 import { Heart } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
-const initialFavorites = [
-  {
-    id: "1",
-    name: "The Artisan Cafe",
-    category: "Cafe & Bakery",
-    rating: 4.8,
-    reviewCount: 234,
-    distance: "0.5 km",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=600&fit=crop",
-    price: "$$",
-    isOpen: true
-  },
-  {
-    id: "3",
-    name: "Zen Spa & Wellness",
-    category: "Spa & Beauty",
-    rating: 4.9,
-    reviewCount: 189,
-    distance: "0.8 km",
-    image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&h=600&fit=crop",
-    price: "$$$$",
-    isOpen: true
-  },
-  {
-    id: "6",
-    name: "Sakura Sushi Bar",
-    category: "Japanese Restaurant",
-    rating: 4.8,
-    reviewCount: 445,
-    distance: "1.1 km",
-    image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=600&fit=crop",
-    price: "$$$",
-    isOpen: true
-  }
-]
+type FavoritePlace = {
+  id: string
+  name: string
+  category: string
+  rating: number
+  reviewCount: number
+  distance: string
+  image: string
+  price?: string
+  isOpen?: boolean
+}
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState(initialFavorites.map(p => p.id))
-  const [places] = useState(initialFavorites)
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
+  const [favoritePlaces, setFavoritePlaces] = useState<FavoritePlace[]>([])
 
-  const handleFavoriteToggle = (id: string) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
-    )
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const authResponse = await fetch("/api/auth/me")
+        const authData = await authResponse.json()
+
+        if (!authResponse.ok || !authData?.user) {
+          router.replace("/login?next=%2Ffavorites")
+          return
+        }
+
+        const response = await fetch("/api/favorites")
+        const data = await response.json()
+        if (!response.ok || !Array.isArray(data?.favorites)) {
+          setFavoritePlaces([])
+          return
+        }
+        setFavoritePlaces(data.favorites)
+      } catch {
+        setFavoritePlaces([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadFavorites()
+  }, [router])
+
+  const handleFavoriteToggle = async (place: FavoritePlace, nextFavoriteState: boolean) => {
+    try {
+      if (nextFavoriteState) {
+        const response = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ place }),
+        })
+        if (!response.ok) return false
+        setFavoritePlaces((prev) => Array.from(new Map([...prev, place].map((p) => [p.id, p])).values()))
+      } else {
+        const response = await fetch(`/api/favorites/${encodeURIComponent(place.id)}`, {
+          method: "DELETE",
+        })
+        if (!response.ok) return false
+        setFavoritePlaces((prev) => prev.filter((item) => item.id !== place.id))
+      }
+      return true
+    } catch {
+      toast.error("Could not update favorites right now.")
+      return false
+    }
   }
-
-  const favoritePlaces = places.filter(place => favorites.includes(place.id))
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-24 pb-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">My Favorites</h1>
           <p className="text-muted-foreground">
@@ -67,6 +90,10 @@ export default function FavoritesPage() {
           </p>
         </div>
 
+        {isLoading ? (
+          <div className="text-center py-16 text-muted-foreground">Loading favorites...</div>
+        ) : (
+        <>
         {favoritePlaces.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {favoritePlaces.map((place) => (
@@ -89,6 +116,8 @@ export default function FavoritesPage() {
               <Link href="/search">Explore Places</Link>
             </Button>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

@@ -125,6 +125,24 @@ export default function PlaceDetailPage() {
     return () => clearInterval(interval)
   }, [placeInfo])
 
+  useEffect(() => {
+    const loadFavoriteState = async () => {
+      if (!placeInfo) return
+      try {
+        const response = await fetch("/api/favorites")
+        if (!response.ok) return
+        const data = await response.json()
+        if (Array.isArray(data?.favorites)) {
+          setIsFavorite(data.favorites.some((item: { id: string }) => item.id === placeInfo.id))
+        }
+      } catch {
+        // no-op
+      }
+    }
+
+    loadFavoriteState()
+  }, [placeInfo])
+
   if (!placeInfo) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -152,9 +170,72 @@ export default function PlaceDetailPage() {
     setCurrentImageIndex((prev) => (prev - 1 + placeInfo.images!.length) % placeInfo.images!.length)
   }
 
-  const handleFavoriteToggle = () => {
-    setIsFavorite(!isFavorite)
-    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites")
+  const handleFavoriteToggle = async () => {
+    if (!placeInfo) return
+    const nextFavoriteState = !isFavorite
+
+    try {
+      const authResponse = await fetch("/api/auth/me")
+      const authData = await authResponse.json()
+
+      if (!authResponse.ok || !authData?.user) {
+        localStorage.setItem(
+          "pendingFavorite",
+          JSON.stringify({
+            id: placeInfo.id,
+            name: placeInfo.name,
+            category: placeInfo.category,
+            rating: placeInfo.rating,
+            reviewCount: placeInfo.reviewCount,
+            distance: placeInfo.distance,
+            image: placeInfo.image,
+            price: placeInfo.price,
+            isOpen: placeInfo.isOpen,
+          }),
+        )
+        const nextPath = `${window.location.pathname}${window.location.search}`
+        router.push(`/login?next=${encodeURIComponent(nextPath)}`)
+        toast.info("Please login first to save favorites.")
+        return
+      }
+
+      if (nextFavoriteState) {
+        const response = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            place: {
+              id: placeInfo.id,
+              name: placeInfo.name,
+              category: placeInfo.category,
+              rating: placeInfo.rating,
+              reviewCount: placeInfo.reviewCount,
+              distance: placeInfo.distance,
+              image: placeInfo.image,
+              price: placeInfo.price,
+              isOpen: placeInfo.isOpen,
+            },
+          }),
+        })
+        if (!response.ok) {
+          toast.error("Could not update favorite.")
+          return
+        }
+      } else {
+        const response = await fetch(`/api/favorites/${encodeURIComponent(placeInfo.id)}`, {
+          method: "DELETE",
+        })
+        if (!response.ok) {
+          toast.error("Could not update favorite.")
+          return
+        }
+      }
+
+      setIsFavorite(nextFavoriteState)
+      toast.success(nextFavoriteState ? "Added to favorites" : "Removed from favorites")
+    } catch {
+      toast.error("Could not update favorites right now.")
+    }
   }
 
   const handleShare = async () => {

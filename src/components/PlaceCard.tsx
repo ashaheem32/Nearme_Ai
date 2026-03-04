@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Star, MapPin, Heart, Clock } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 interface PlaceCardProps {
   id: string
@@ -19,7 +19,20 @@ interface PlaceCardProps {
   price?: string
   isOpen?: boolean
   isFavorite?: boolean
-  onFavoriteToggle?: (id: string) => void
+  onFavoriteToggle?: (
+    place: {
+      id: string
+      name: string
+      category: string
+      rating: number
+      reviewCount: number
+      distance: string
+      image: string
+      price?: string
+      isOpen?: boolean
+    },
+    nextFavoriteState: boolean,
+  ) => Promise<boolean | void> | boolean | void
 }
 
 export function PlaceCard({
@@ -36,12 +49,22 @@ export function PlaceCard({
   onFavoriteToggle
 }: PlaceCardProps) {
   const [favorite, setFavorite] = useState(isFavorite)
+  useEffect(() => {
+    setFavorite(isFavorite)
+  }, [isFavorite])
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setFavorite(!favorite)
-    onFavoriteToggle?.(id)
+    const nextFavorite = !favorite
+    setFavorite(nextFavorite)
+    const result = await onFavoriteToggle?.(
+      { id, name, category, rating, reviewCount, distance, image, price, isOpen },
+      nextFavorite,
+    )
+    if (result === false) {
+      setFavorite(!nextFavorite)
+    }
   }
 
   return (
