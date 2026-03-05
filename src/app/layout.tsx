@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description: "Find and book amazing places near you with NearMe",
 };
 
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-262J31HP6C";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,6 +32,18 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <ErrorReporterClient />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
         <Script
           src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/scripts//route-messenger.js"
           strategy="afterInteractive"
