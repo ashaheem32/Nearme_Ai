@@ -571,7 +571,7 @@ export default function PlaceDetailPage() {
           <div className="lg:col-span-1">
             <BookingWidget
               placeName={placeInfo.name}
-              pricePerPerson="₹500"
+              pricePerPerson="$12"
               onBook={handleBooking}
             />
           </div>
