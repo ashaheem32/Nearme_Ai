@@ -204,23 +204,45 @@ export default function Home() {
     }
   }
 
-  const handleSearch = () => {
+  const checkAuth = async (redirectPath: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/me")
+      const data = await response.json()
+      if (!response.ok || !data?.user) {
+        router.push(`/login?next=${encodeURIComponent(redirectPath)}`)
+        toast.info("Please login first to search.")
+        return false
+      }
+      return true
+    } catch {
+      router.push(`/login?next=${encodeURIComponent(redirectPath)}`)
+      toast.info("Please login first to search.")
+      return false
+    }
+  }
+
+  const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast.error("Please enter a search query")
       return
     }
 
-    const params = new URLSearchParams({
-      q: searchQuery,
-      lat: currentLocation.lat.toString(),
-      lng: currentLocation.lng.toString(),
-    })
+    const params = new URLSearchParams({ q: searchQuery })
+
+    if (currentLocation.lat !== 0 || currentLocation.lng !== 0) {
+      params.set("lat", currentLocation.lat.toString())
+      params.set("lng", currentLocation.lng.toString())
+    }
 
     if (selectedVibe) {
       params.append("vibe", selectedVibe)
     }
 
-    router.push(`/search?${params.toString()}`)
+    const searchPath = `/search?${params.toString()}`
+    const isLoggedIn = await checkAuth(searchPath)
+    if (!isLoggedIn) return
+
+    router.push(searchPath)
   }
 
   const handleCategoryClick = (categoryName: string) => {
@@ -261,7 +283,14 @@ export default function Home() {
     )
   }
 
-  const handleGetCurrentLocation = () => {
+  const handleGetCurrentLocation = async () => {
+    const isLoggedIn = await checkAuth("/")
+    if (!isLoggedIn) return
+
+    // Scroll to Recommended For You section
+    const section = document.getElementById("recommended")
+    section?.scrollIntoView({ behavior: "smooth" })
+
     if ("geolocation" in navigator) {
       setIsGettingLocation(true)
       const loadingToast = toast.loading("Getting your current location...")
@@ -595,7 +624,7 @@ export default function Home() {
       </section>
 
       {/* Personalized Recommendations */}
-      <section className="py-16 lg:py-24 border-t border-border/40">
+      <section id="recommended" className="py-16 lg:py-24 border-t border-border/40">
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <div>
